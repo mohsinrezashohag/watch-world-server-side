@@ -1,5 +1,6 @@
 const express = require('express')
 const { MongoClient } = require('mongodb');
+const ObjectId = require('mongodb').ObjectId
 const app = express()
 const cors = require('cors')
 const port = process.env.PORT || 5000;
@@ -15,7 +16,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 
 app.get('/', (req, res) => {
-    res.send("Server Running well ✅✅")
+    res.send(" Watch World ## Server Running well ✅✅")
 })
 
 
@@ -26,23 +27,115 @@ async function run() {
         await client.connect();
         const database = client.db("WatchWorldWebsite");
         const watchesCollection = database.collection("watches");
+        const userCollection = database.collection("users");
+        const ordersCollection = database.collection("orders");
+        const reviewCollection = database.collection("reviews");
 
         // adding watches to database
         app.post('/addWatches', async (req, res) => {
             const newWatch = req.body;
             const result = await watchesCollection.insertOne(newWatch);
-            console.log(result);
             res.send(result)
 
         })
 
+
+
         // load all watches
         app.get('/watches', async (req, res) => {
             const result = await watchesCollection.find({}).toArray()
-            console.log(result);
             res.json(result)
         })
 
+
+        // load single watche
+        app.get('/watches/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const result = await watchesCollection.findOne(query)
+            res.json(result)
+        })
+
+
+        // add user to database when they register
+        app.post('/addUsers', async (req, res) => {
+            const user = req.body;
+            const result = await userCollection.insertOne(user);
+            res.send(result)
+        })
+
+        // load all users and check they are admin or not
+        app.get('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const user = await userCollection.findOne(query);
+            console.log(user);
+            let isAdmin = false
+            if (user?.role === 'admin') {
+                isAdmin = true
+            }
+
+            res.json({ isAdmin })
+
+        })
+
+
+        // make user admin 
+        app.put('/makeAdmin', async (req, res) => {
+            const user = req.body;
+            const filter = { email: user.email };
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.json(result)
+        })
+
+
+        //add order
+        app.post('/order', async (req, res) => {
+            const order = req.body;
+            const result = await ordersCollection.insertOne(order)
+            res.json(result)
+        })
+
+        // all orders for manage all order option by admin
+        app.get('/allOrders', async (req, res) => {
+            const allOrders = await ordersCollection.find({}).toArray()
+            res.send(allOrders)
+        })
+
+        // get orders based on email
+        app.get('/myOrders/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const myOrders = await ordersCollection.find(query).toArray()
+            res.send(myOrders)
+        })
+        // delete specific user order
+        app.delete('/ordersDelete/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const result = await ordersCollection.deleteOne(query);
+            res.send(result)
+
+        })
+
+        //take review from user
+        app.post('/addReview', async (req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
+            res.send(result)
+        })
+
+        // show reviews to ui
+
+        app.get('/reviews', async (req, res) => {
+            const reviews = await reviewCollection.find({}).toArray()
+            res.send(reviews)
+        })
 
 
     }
