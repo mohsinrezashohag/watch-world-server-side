@@ -48,13 +48,23 @@ async function run() {
         })
 
 
-        // load single watche
+        // load single watch
         app.get('/watches/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: ObjectId(id) }
             const result = await watchesCollection.findOne(query)
             res.json(result)
         })
+
+        // delete watch from manage products page
+        app.delete('/deleteWatch/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await watchesCollection.deleteOne(query)
+            res.send(result)
+
+        })
+
 
 
         // add user to database when they register
@@ -122,6 +132,29 @@ async function run() {
             res.send(result)
 
         })
+
+        // load single order based on id
+        app.get('/order/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await ordersCollection.findOne(query)
+            res.send(result)
+        })
+
+        // modify order
+        app.put('/modifyOrder/:id', async (req, res) => {
+            const id = req.params.id
+            const order = req.body;
+            console.log('updated order', order);
+            const filter = { _id: ObjectId(id) }
+            const updateDoc = {
+                $set: order
+            }
+
+            const result = await ordersCollection.updateOne(filter, updateDoc)
+            res.send(result)
+        })
+
 
         //take review from user
         app.post('/addReview', async (req, res) => {
